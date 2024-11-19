@@ -1,0 +1,147 @@
+---
+title: "GroupProject"
+author: "Surafel Geleta"
+date: "2024-10-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+[This is the data on urban heat island effect](https://1drv.ms/x/c/e774b2a9a8ad7df6/EVBy98poZAJNuqjtmIXwpM4BPtu5YzpuwFobhT5sqe6hdw?e=5M8ecK&nav=MTVfezE3MkZFRDBFLTMyRkMtNDMwOS04QTdGLUMzODAwOTYxODgyM30)
+
+-   [Source Website](https://www.climatecentral.org/climate-matters/urban-heat-islands-2023)
+
+[This is the data on vehicle ownership](https://1drv.ms/x/c/e774b2a9a8ad7df6/Eahz3FoPr4xAgdf-ajBIz_AB61aJgJAiLmkIabLTcUNpnw?e=wTCld2)
+
+-   [Source Website](https://www.socialexplorer.com/tables/ACS2022_5yr/R13761009)
+
+```{r}
+# Calling packages
+
+library(tidyverse)
+
+# Importing + changing datasets
+  
+vehicle <- read.csv("C:/Users/gelet/Downloads/R13761009_SL140.csv")|>
+  select(1, 3, 9, 18)
+
+heat_island <- read.csv("~/SDS313/csvs/census_tract.csv")|>
+  select(-1, -3)
+
+# Joining
+
+df <- left_join(heat_island, vehicle, by = "FIPS")
+```
+
+```{r}
+# Plotting
+
+## Histograms
+
+### Histogram of Urban Heat Island Effect
+ggplot(df, aes(x = urban.heat.island.effect..temperature.in.degrees.F.)) +
+  geom_histogram(col = 'black', fill = '#0072B2') +
+  labs(x = "Urban Heat Island Effect (Temperature in Degrees F)",
+       y = "Number of Census Tracts")
+
+### Histogram of Percent of Non-Vehicle Owners Among Renter Occupied Housing Units
+ggplot(df, aes(x = Percent.Renter.Occupied.Housing.Units..No.Vehicle.Available)) +
+  geom_histogram(col = 'black', fill = '#0072B2') +
+  labs(x = "Percent of Renter-Occupied Housing Units w/No Vehicle Available",
+       y = "Number of Census Tracts")
+
+### Histogram of Percent of Workers Driving with Automobiles to Work
+ggplot(df, aes(x = Percent.Workers.16.Years.and.Over..Car..Truck..or.Van)) +
+  geom_histogram(col = 'black', fill = '#0072B2') +
+  labs(x = "Percent of Workers 16 Years and Over Commuting w/Car, Truck, or Van",
+       y = "Number of Census Tracts")
+
+### Histogram of Percent of Non-Vehicle Owners Among Owner Occupied Housing Units
+ggplot(df, aes(x = Percent.Occupied.Housing.Units..No.Vehicle.Available)) +
+  geom_histogram(col = 'black', fill = '#0072B2') +
+  labs(x = "Percent of Occupied Housing Units w/No Vehicle Available",
+       y = "Number of Census Tracts")
+
+```
+
+```{r}
+# Urban Heat Island Effect and Percent of Workers that Drive Car, Truck, Van
+
+ggplot(df) +
+  geom_point(aes(x = Percent.Workers.16.Years.and.Over..Car..Truck..or.Van, y = urban.heat.island.effect..temperature.in.degrees.F.)) +
+  scale_x_continuous(limits=c(0, 100)) +
+  scale_y_continuous(limits=c(0, 14)) +
+  labs(x = "Percent of Workers 16 Years or Older Driving Car, Truck, or Van",
+       y = "Urban Heat Island Effect (temperature in degrees F)") +
+  geom_smooth(aes(x = Percent.Workers.16.Years.and.Over..Car..Truck..or.Van, y = urban.heat.island.effect..temperature.in.degrees.F.), 
+              method = lm)
+  
+
+# Urban Heat Island Effect and % of Non-Vehicle Owners among Owner-Occupied Homes
+
+ggplot(df) +
+  geom_point(aes(x = Percent.Occupied.Housing.Units..No.Vehicle.Available, y = urban.heat.island.effect..temperature.in.degrees.F.)) +
+  scale_x_continuous(limits=c(0, 100)) +
+  scale_y_continuous(limits=c(0, 14)) +
+  labs(x = "Percent of Non-Vehicle Owners among Occupied Housing Units",
+       y = "Urban Heat Island Effect (temperature in degrees F)") +
+   geom_smooth(aes(x = Percent.Occupied.Housing.Units..No.Vehicle.Available, y = urban.heat.island.effect..temperature.in.degrees.F.), 
+              method = lm)
+  
+# Urban Heat Island Effect and % of Non-Vehicle Owners among Renter-Occupied Homes
+
+ggplot(df) +
+  geom_point(aes(x = Percent.Renter.Occupied.Housing.Units..No.Vehicle.Available, y = urban.heat.island.effect..temperature.in.degrees.F.)) +
+  scale_x_continuous(limits=c(0, 100)) +
+  scale_y_continuous(limits=c(0, 14)) +
+  labs(x = "Percent of Non-Vehicle Owners among Renter-Occupied Housing Units",
+       y = "Urban Heat Island Effect (temperature in degrees F)") +
+  geom_smooth(aes(x =Percent.Renter.Occupied.Housing.Units..No.Vehicle.Available, y = urban.heat.island.effect..temperature.in.degrees.F.), 
+              method = lm)
+```
+
+```{r}
+# Linear models
+
+model1 <- lm(urban.heat.island.effect..temperature.in.degrees.F.~Percent.Workers.16.Years.and.Over..Car..Truck..or.Van, df)
+
+model2 <- lm(urban.heat.island.effect..temperature.in.degrees.F.~Percent.Occupied.Housing.Units..No.Vehicle.Available, df)
+
+model3 <-lm(urban.heat.island.effect..temperature.in.degrees.F.~Percent.Renter.Occupied.Housing.Units..No.Vehicle.Available, df)
+
+# Summaries
+
+summary(model1)
+
+summary(model2)
+
+summary(model3)
+```
+
+```{r}
+urban_heat <- function(df, var){
+  print(ggplot(df, aes(x = var)) +
+          geom_histogram() +
+          labs(x = paste(str_replace(var, pattern = ".", replacement = " "))))
+  print(summary(var))
+  print(ggplot(df, aes(x = var, y = urban.heat.island.effect..temperature.in.degrees.F.)) +
+          geom_point() +
+          labs(x = var,
+               y = "Urban Heat Island Effect (Temperature in Degrees F"))
+  print(summary(lm(var~urban.heat.island.effect..temperature.in.degrees.F., df)))
+  print(ggplot(lm(var~urban.heat.island.effect..temperature.in.degrees.F., df), 
+         aes(x=.fitted, y=.resid))+
+  geom_point()+
+  geom_hline(yintercept = 0))
+}
+
+urban_heat(df, df$Percent.Workers.16.Years.and.Over..Car..Truck..or.Van)
+
+urban_heat(df, df$Percent.Renter.Occupied.Housing.Units..No.Vehicle.Available)
+
+urban_heat(df, df$Percent.Occupied.Housing.Units..No.Vehicle.Available)
+
+
+```
